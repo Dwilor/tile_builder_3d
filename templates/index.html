@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tile Builder 3D</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <canvas id="map-canvas"></canvas>
+
+    <!-- ── LOADING ── -->
+    <div id="loading">
+        <div class="loading-inner">
+            <span class="loading-rune">⚔</span>
+            <h2 class="loading-title">Tile Builder 3D</h2>
+            <p class="loading-subtitle">Forge de l'architecte des mondes</p>
+            <div class="loading-divider"></div>
+            <div class="loading-bar-wrap"><div id="loading-progress"></div></div>
+            <p id="loading-status">Invocation des pierres magiques…</p>
+        </div>
+    </div>
+
+    <!-- ── LIBRARY MANAGER MODAL ── -->
+    <div id="lib-overlay" class="hidden">
+        <div id="lib-modal">
+            <div id="lib-modal-header">
+                <h2 id="lib-modal-title">⚒ Gérer la Bibliothèque</h2>
+                <button id="lib-close-btn" onclick="libManager.close()">✕</button>
+            </div>
+
+            <div id="lib-modal-body">
+                <!-- Left: folder tree -->
+                <div id="lib-sidebar">
+                    <div class="lib-sidebar-header">
+                        <span>Catégories</span>
+                        <button class="lib-action-btn" onclick="libManager.promptNewFolder()">+ Dossier</button>
+                    </div>
+                    <div id="lib-folder-list"></div>
+                </div>
+
+                <!-- Right: file list + dropzone -->
+                <div id="lib-content">
+                    <div id="lib-content-header">
+                        <span id="lib-current-folder-label">Sélectionnez une catégorie</span>
+                        <button class="lib-action-btn" id="lib-import-btn" onclick="libManager.triggerImport()" style="display:none">
+                            ＋ Importer des STL
+                        </button>
+                        <input type="file" id="lib-file-input" multiple accept=".stl" style="display:none" onchange="libManager.handleFileInput(event)">
+                    </div>
+
+                    <div id="lib-dropzone" class="hidden">
+                        <div id="lib-dropzone-inner">
+                            <div class="dropzone-icon">⬇</div>
+                            <div class="dropzone-text">Glissez vos fichiers <strong>.stl</strong> ici</div>
+                            <div class="dropzone-sub">ou cliquez sur « Importer des STL »</div>
+                        </div>
+                    </div>
+
+                    <div id="lib-file-list"></div>
+
+                    <div id="lib-upload-progress" class="hidden">
+                        <div id="lib-upload-bar"></div>
+                        <span id="lib-upload-label">Envoi en cours…</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MAIN UI ── -->
+    <div id="ui-wrapper">
+        <header id="topbar">
+            <h1>⚔ Tile Builder 3D</h1>
+            <div class="tools">
+                <button class="btn-library" onclick="libManager.open()">⚒ Bibliothèque</button>
+
+                <div class="sep"></div>
+
+                <button onclick="engine.resetMap()">Nouveau</button>
+                <button onclick="ui.saveMap()">Sauvegarder</button>
+                <button onclick="document.getElementById('map-loader').click()">Charger</button>
+                <input type="file" id="map-loader" style="display:none" accept=".json" onchange="ui.loadMap(event)">
+
+                <div class="sep"></div>
+
+                <button onclick="ui.undo()" title="Annuler (Ctrl+Z)">↶</button>
+                <button onclick="ui.redo()" title="Rétablir (Ctrl+Y)">↷</button>
+
+                <div class="sep"></div>
+
+                <button id="btn-place" class="active" onclick="ui.setMode('place')">Placer</button>
+                <button id="btn-erase" onclick="ui.setMode('erase')">Effacer</button>
+
+                <div class="sep"></div>
+
+                <button onclick="ui.changeLayer(-1)" title="Descendre de niveau">▼</button>
+                <span id="layer-label">Lvl 0</span>
+                <button onclick="ui.changeLayer(1)" title="Monter de niveau">▲</button>
+
+                <div class="sep"></div>
+
+                <div class="custom-select-wrap">
+                    <select id="light-select" onchange="engine.setLighting(this.value)">
+                        <option value="default">🕯 Lumière Standard</option>
+                        <option value="sunset">🌅 Coucher de Soleil</option>
+                        <option value="moonlight">🌙 Clair de Lune</option>
+                        <option value="dungeon">🔥 Donjon Sombre</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <aside id="library">
+                <div id="library-header">
+                    <button id="back-to-cats" style="display:none; margin-bottom:10px; width:100%" onclick="ui.showCategories()">← Retour aux catégories</button>
+                    <h3 id="current-category">Bibliothèque</h3>
+                    <div id="library-header-ornament">· · ✦ · ·</div>
+                </div>
+                <div id="tile-grid"></div>
+            </aside>
+
+            <div id="map-interaction-zone"></div>
+
+            <aside id="inventory-panel">
+                <div class="inventory-header">
+                    <span>Inventaire</span>
+                    <button onclick="ui.exportList()">Export .txt</button>
+                </div>
+                <div id="inventory-list">
+                    <div class="inventory-empty">
+                        <span class="inventory-empty-rune">⚗</span>
+                        Sélectionnez une tuile et<br>cliquez sur la carte pour<br>commencer à construire.
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <div class="hint-bar">
+            <div class="hint-item"><span class="hint-key">Clic droit</span> Orbite</div>
+            <div class="hint-item"><span class="hint-key">Molette</span> Zoom</div>
+            <div class="hint-item"><span class="hint-key">R</span> Rotation</div>
+            <div class="hint-item"><span class="hint-key">Z Q S D</span> Déplacement</div>
+            <div class="hint-item"><span class="hint-key">0–9</span> Niveau</div>
+            <div class="hint-item"><span class="hint-key">Ctrl+Z</span> Annuler</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

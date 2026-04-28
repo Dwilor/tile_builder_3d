@@ -1,0 +1,17 @@
+Placez vos fichiers .stl dans ce dossier (ou dans des sous-dossiers).
+
+  Organisation recommandée :
+    stl/
+      Sols/          ← tous les sols ici
+      Murs/          ← murs, portes, fenêtres
+      Mobilier/      ← tables, chaises, étagères
+      Props/         ← tonneaux, lampes, accessoires
+      ...            ← tout autre sous-dossier devient une catégorie
+
+  Organisation simple (dossier plat) :
+    stl/
+      mon_mur.stl
+      ma_table.stl
+      ...            ← les catégories sont détectées par mots-clés
+
+Relancez l'application après avoir ajouté des fichiers.
